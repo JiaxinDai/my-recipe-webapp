@@ -37,12 +37,12 @@
 					class="btn btn-success">Upload A Recipe</a>
 			</div>
 			<br>
-
+			
 			<div class="row">
 				<c:forEach var="recipe" items="${listRecipe}">
 					<div class="img-with-text">
 						<img class="recipe-img"
-							src="<%=request.getContextPath()%>/uploadFile/${recipe.filename}"
+							src="display?imgToDisplay=<c:out value='${recipe.filename}'/>&currentUser=<c:out value='${currentUser}'/>"
 							alt="Image Not Found" /> <a class="recipe-name-text"
 							href="edit?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">${recipe.title}
 							>></a>

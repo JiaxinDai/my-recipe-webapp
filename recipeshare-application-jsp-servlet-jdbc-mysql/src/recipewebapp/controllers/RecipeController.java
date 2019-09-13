@@ -39,9 +39,9 @@ public class RecipeController extends HttpServlet {
 
 	public void init() {
 		recipeDAO = new RecipeDaoImpl();
-	    imageFolder = System.getProperty("user.home") + "/Desktop/uploaded_files/";
+		imageFolder = System.getProperty("user.home") + "/Desktop/uploaded_files/";
 	}
-	
+
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		doGet(request, response);
@@ -50,7 +50,7 @@ public class RecipeController extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		String action = request.getServletPath();
-		
+
 		request.setAttribute("currentUser", request.getParameter("currentUser"));
 
 		try {
@@ -73,6 +73,9 @@ public class RecipeController extends HttpServlet {
 			case "/list":
 				listRecipe(request, response);
 				break;
+			case "/display":
+				displayRecipeImage(request, response);
+				break;
 			default:
 				RequestDispatcher dispatcher = request.getRequestDispatcher("login/login.jsp");
 				dispatcher.forward(request, response);
@@ -93,7 +96,7 @@ public class RecipeController extends HttpServlet {
 
 	private void showNewForm(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		
+
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-form.jsp");
 		dispatcher.forward(request, response);
 	}
@@ -107,24 +110,24 @@ public class RecipeController extends HttpServlet {
 		dispatcher.forward(request, response);
 
 	}
-	
+
 	private void insertRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
 		String title = null;
 		String owner = request.getParameter("currentUser");
 		String description = null;
 		String filename = null;
-		
+
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
 		boolean isMultipartContent = ServletFileUpload.isMultipartContent(request);
-		
+
 		if (!isMultipartContent) {
 			return;
 		}
-		
+
 		FileItemFactory factory = new DiskFileItemFactory();
 		ServletFileUpload upload = new ServletFileUpload(factory);
-		
+
 		try {
 			List < FileItem > fields = upload.parseRequest(request);
 			Iterator < FileItem > it = fields.iterator();
@@ -146,7 +149,7 @@ public class RecipeController extends HttpServlet {
 						File outputFile = new File(filename);
 						fileItem.write(new File(imageFolder, outputFile.getName()));
 					}
-					
+
 					Recipe newRecipe = new Recipe(title, owner, filename, description, LocalDate.now());
 					recipeDAO.insertRecipe(newRecipe);
 				}
@@ -161,7 +164,7 @@ public class RecipeController extends HttpServlet {
 			out.close();
 		}
 	}
-	
+
 	private void updateRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
 		String owner = request.getParameter("currentUser");
 		int id = -1;
@@ -169,18 +172,18 @@ public class RecipeController extends HttpServlet {
 		String description = null;
 		String title = null;
 		// String filename = null;
-		
+
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
 		boolean isMultipartContent = ServletFileUpload.isMultipartContent(request);
-		
+
 		if (!isMultipartContent) {
 			return;
 		}
-		
+
 		FileItemFactory factory = new DiskFileItemFactory();
 		ServletFileUpload upload = new ServletFileUpload(factory);
-		
+
 		try {
 			List < FileItem > fields = upload.parseRequest(request);
 			Iterator < FileItem > it = fields.iterator();
@@ -202,7 +205,7 @@ public class RecipeController extends HttpServlet {
 					}
 				}
 			}
-			
+
 			Recipe updateRecipe = new Recipe(id, title, owner, filename, description, LocalDate.now());
 			recipeDAO.updateRecipe(updateRecipe);
 		} catch (Exception e) {
@@ -218,15 +221,60 @@ public class RecipeController extends HttpServlet {
 
 	private void deleteRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
 		int id = Integer.parseInt(request.getParameter("id"));
-		
+
 		// delete the food image from the local file system
 		Files.deleteIfExists(Paths.get(imageFolder + recipeDAO.getRecipeById(id).getFilename()));
-				
+
 		recipeDAO.deleteRecipe(id);
-		
+
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 		dispatcher.forward(request, response);
 	}
+
+	private void displayRecipeImage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		// Get requested image path info.
+		String requestedImage = request.getParameter("imgToDisplay");
+
+		// Check if file name is actually supplied to the request URI.
+		if (requestedImage == null) {
+			// Do your thing if the image is not supplied to the request URI.
+			// Throw an exception, or send 404, or show default/warning image, or just ignore it.
+			response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404.
+			return;
+		}
+
+		// Decode the file name (might contain spaces and on) and prepare file object.
+		File image = new File(imageFolder, requestedImage);
+
+		// Check if file actually exists in local file system.
+		if (!image.exists()) {
+			// Do your thing if the file appears to be non-existing.
+			// Throw an exception, or send 404, or show default/warning image, or just ignore it.
+			response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404.
+			return;
+		}
+
+		// Get content type by filename.
+		String contentType = getServletContext().getMimeType(image.getName());
+		
+		// Check if file is actually an image (avoid download of other files by hackers!).
+		// For all content types, see: http://www.w3schools.com/media/media_mimeref.asp
+		if (contentType == null || !contentType.startsWith("image")) {
+			// Do your thing if the file appears not being a real image.
+			// Throw an exception, or send 404, or show default/warning image, or just ignore it.
+			response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404.
+			return;
+		}
+
+		// Init servlet response.
+		response.reset();
+		response.setContentType(contentType);
+		response.setHeader("Content-Length", String.valueOf(image.length()));
+
+		// Write image content to response.
+		Files.copy(image.toPath(), response.getOutputStream());
+	}
+
 }
