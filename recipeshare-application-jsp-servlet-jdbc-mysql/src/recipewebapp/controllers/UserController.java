@@ -1,21 +1,33 @@
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+package recipewebapp.controllers;
 
-import org.springframework.web.bind.annotation.RequestMapping;
+import java.io.IOException;
 
-import org.springframework.web.bind.annotation.RestController;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
+import recipewebapp.dao.UserDao;
+import recipewebapp.model.User;
 
+@WebServlet("/register")
+public class UserController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private UserDao userDao;
 
-@RestController
+	public void init() {
+		userDao = new UserDao();
+	}
 
-public class UserController {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		register(request, response);
+	}
 
-    @RequestMapping("/user")
-
-    public User user(@AuthenticationPrincipal User principal) {
-
-        return principal;
-
-    }
-
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		response.sendRedirect("register/register.jsp");
+	}
 }

@@ -1,39 +1,56 @@
 package recipewebapp.controllers;
 
-@Controller
-public class LoginController {
+import java.io.IOException;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
-    @Autowired
-    LoginService loginService;
+import recipewebapp.dao.LoginDao;
+import recipewebapp.dao.RecipeDao;
+import recipewebapp.dao.RecipeDaoImpl;
+import recipewebapp.model.LoginBean;
 
-       /**
-     * Validate login credentials and redirect user to home page.
-     * If user is successfully validated, redirect to home page.
-     * Else redirect user with an Error Status
-     * @param user
-     * @param response
-     * @param redirectAttributes
-     * @return
-     */
-    @PostMapping("/login")
-    public String doubleSubmitLogin(@ModelAttribute User user, HttpServletResponse response, RedirectAttributes redirectAttributes){
+/**
+ * @email Ramesh Fadatare
+ */
 
+@WebServlet("/login")
+public class LoginController extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private LoginDao loginDao;
+	private RecipeDao recipeDAO;
 
-        if(loginService.authenticateUser(user.getUsername(),user.getPassword()) ){
+	public void init() {
+		loginDao = new LoginDao();
+		recipeDAO = new RecipeDaoImpl();
+	}
 
-            Cookie cookieSessionId = new Cookie("sessionId", loginService.saveSessionData(user.getUsername()));
-            Cookie cookieCSRF      = new Cookie("csrfCookie", loginService.generateRandomToken());
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		response.sendRedirect("login/login.jsp");
+	}
+	
+	private void authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+		String username = request.getParameter("username");
+		String password = request.getParameter("password");
+		LoginBean loginBean = new LoginBean();
+		loginBean.setUsername(username);
+		loginBean.setPassword(password);
+		
+		try {
+			if (loginDao.validate(loginBean)) {
+				request.setAttribute("listRecipe", recipeDAO.getAllRecipes());
+				RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+			} else {
+				HttpSession session = request.getSession();
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 
-            response.addCookie(cookieSessionId);
-            response.addCookie(cookieCSRF);
-
-            return "redirect:/account";
-
-        }else{
-
-            redirectAttributes.addFlashAttribute("Status", "error");
-            return "redirect:/";
-
-        }
-    }
+	}
 }
