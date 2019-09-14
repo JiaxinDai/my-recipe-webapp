@@ -1,3 +1,5 @@
+package recipewebapp.utils; 
+
 public enum AllRecipeAttributesEnum {
 
 

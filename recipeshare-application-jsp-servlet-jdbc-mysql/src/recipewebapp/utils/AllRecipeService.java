@@ -1,10 +1,4 @@
-import com.essalah.recipescraper.model.Ingredient;
-
-import com.recipescraper.model.Instruction;
-
-import com.recipescraper.model.Recipe;
-
-import com.recipescraper.model.enums.AllRecipeAttributesEnum;
+package recipewebapp.utils;
 
 import org.jsoup.Jsoup;
 
