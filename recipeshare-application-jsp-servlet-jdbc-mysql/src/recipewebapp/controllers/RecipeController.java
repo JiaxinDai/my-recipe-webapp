@@ -93,7 +93,9 @@ public class RecipeController extends HttpServlet {
 			throws SQLException, IOException, ServletException {
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+		dispatcher.forward(request, response);
 	}
 
 	private void showNewForm(HttpServletRequest request, HttpServletResponse response)
@@ -139,10 +141,21 @@ public class RecipeController extends HttpServlet {
 			while (it.hasNext()) {
 				FileItem fileItem = it.next();
 				boolean isFormField = fileItem.isFormField();
-				if (title == null) {
-					title = fileItem.getString();
-				} else if (description == null) {
-					description = fileItem.getString();
+				if (isFormField) {
+					if (title == null) {
+						title = fileItem.getString();
+					} else if (description == null) {
+						description = fileItem.getString();
+					}
+				} else {
+					if (fileItem.getSize() > 0) {
+						filename = fileItem.getName();
+						File outputFile = new File(filename);
+						fileItem.write(new File(imageFolder, outputFile.getName()));
+					}
+
+					Recipe newRecipe = new Recipe(title, owner, filename, description, LocalDate.now());
+					recipeDAO.insertRecipe(newRecipe);
 				}
 			}
 		} catch (Exception e) {
@@ -150,10 +163,71 @@ public class RecipeController extends HttpServlet {
 		} finally {
 			List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 			request.setAttribute("listRecipe", listRecipe);
+			request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 			RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+			dispatcher.forward(request, response);
+			out.close();
 		}
 	}
-	
+
+	private void updateRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
+		String owner = request.getParameter("currentUser");
+		int id = -1;
+		String filename = null;
+		String description = null;
+		String title = null;
+		int likes = -1;
+		// String filename = null;
+
+		response.setContentType("text/html");
+		PrintWriter out = response.getWriter();
+		boolean isMultipartContent = ServletFileUpload.isMultipartContent(request);
+
+		if (!isMultipartContent) {
+			return;
+		}
+
+		FileItemFactory factory = new DiskFileItemFactory();
+		ServletFileUpload upload = new ServletFileUpload(factory);
+
+		try {
+			List < FileItem > fields = upload.parseRequest(request);
+			Iterator < FileItem > it = fields.iterator();
+			if (!it.hasNext()) {
+				return;
+			}
+			while (it.hasNext()) {
+				FileItem fileItem = it.next();
+				boolean isFormField = fileItem.isFormField();
+				if (isFormField) {
+					if (id == -1) {
+						id = Integer.parseInt(fileItem.getString());
+					} else if (filename == null) {
+						filename = fileItem.getString();
+					} else if (title == null) {
+						title = fileItem.getString();
+					} else if (description == null) {
+						description = fileItem.getString();
+					} else if (likes == -1) {
+						likes = Integer.parseInt(fileItem.getString());
+					}
+				}
+			}
+
+			Recipe updateRecipe = new Recipe(id, title, owner, filename, description, LocalDate.now(), likes);
+			recipeDAO.updateRecipe(updateRecipe);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			List<Recipe> listRecipe = recipeDAO.getAllRecipes();
+			request.setAttribute("listRecipe", listRecipe);
+			request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
+			RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+			dispatcher.forward(request, response);
+			out.close();
+		}
+	}
+
 	private void deleteRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
 		int id = Integer.parseInt(request.getParameter("id"));
 
@@ -164,7 +238,9 @@ public class RecipeController extends HttpServlet {
 
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+		dispatcher.forward(request, response);
 	}
 
 	private void displayRecipeImage(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -210,4 +286,17 @@ public class RecipeController extends HttpServlet {
 		// Write image content to response.
 		Files.copy(image.toPath(), response.getOutputStream());
 	}
+
+	private void likeRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
+		int id = Integer.parseInt(request.getParameter("id"));
+		
+		recipeDAO.incrementRecipeLikes(id);
+
+		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
+		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
+		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+		dispatcher.forward(request, response);
+	}
+	
 }
