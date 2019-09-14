@@ -1,133 +1,163 @@
 package recipewebapp.dao;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.text.ParseException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.log4j.Logger;
+import recipewebapp.model.Recipe;
+import recipewebapp.utils.JDBCUtils;
 
-import com.opencsv.CSVReader;
-import com.recipeapi.api.Rating;
-import com.recipeapi.api.Recipe;
+/**
+ * This DAO class provides CRUD database operations for the table recipes in the
+ * database.
+ *
+ */
 
 public class RecipeDaoImpl implements RecipeDao {
+
+	private static final String INSERT_RECIPES_SQL = "INSERT INTO recipes"
+			+ "  (title, owner, filename, description,  publication_date, likes) VALUES " + " (?, ?, ?, ?, ?, ?);";
+
+	private static final String SELECT_RECIPE_BY_ID = "select id,title,owner,filename,description,publication_date,likes from recipes where id =?";
+	private static final String SELECT_ALL_RECIPES = "select * from recipes";
+	private static final String DELETE_RECIPE_BY_ID = "delete from recipes where id = ?;";
+	private static final String UPDATE_RECIPE = "update recipes set title = ?, owner= ?, filename =?, description =?, publication_date = ?, likes = ? where id = ?;";
+	private static final String SELECT_MOST_POPULAR_RECIPE = "SELECT id,MAX(likes) FROM recipes GROUP BY id;";
 	
-	//using this as DB
-	Map<Long, Recipe> recipes;
-	private int paginationLimit = 2;
-	private long lastUsedId;
+	public RecipeDaoImpl() {}
 	
-	public RecipeDaoImpl() throws IOException, ParseException {
-		recipes = new HashMap<Long, Recipe>();
-		CSVReader reader = new CSVReader(new FileReader("recipe-data.csv"));
-	     String [] nextLine;
-	     while ((nextLine = reader.readNext()) != null) {
-	    	Logger.getLogger(this.getClass()).info("Loaded in recipe id: " + nextLine[0]);
-	        Recipe recipe = new Recipe(nextLine[0], nextLine[1], nextLine[2], nextLine[3], nextLine[4], nextLine[5],
-	        		nextLine[6], nextLine[7], nextLine[8], nextLine[9], nextLine[10], nextLine[11], nextLine[12],
-	        		nextLine[13], nextLine[14], nextLine[15], nextLine[16], nextLine[17], nextLine[18], nextLine[19],
-	        		nextLine[20], nextLine[21], nextLine[22], nextLine[23], nextLine[24], nextLine[25]);
-	        recipes.put(recipe.getId(), recipe);
-	        
-	     }
-	     reader.close();
-	     this.lastUsedId = getMaxId();
-	}
-	
-	private long getMaxId() {
-		long max = 0;
-		Iterator<Entry<Long, Recipe>> it = recipes.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry<Long, Recipe> pair = (Map.Entry<Long, Recipe>)it.next();
-	        if (max < pair.getValue().getId())
-	        	max = pair.getValue().getId();
-	    }
-	    return max;
+	@Override
+	public void insertRecipe(Recipe recipe) throws SQLException {
+		// try-with-resource statement will auto close the connection.
+		try (Connection connection = JDBCUtils.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(INSERT_RECIPES_SQL)) {
+			preparedStatement.setString(1, recipe.getTitle());
+			preparedStatement.setString(2, recipe.getOwner());
+			preparedStatement.setString(3, recipe.getFilename());
+			preparedStatement.setString(4, recipe.getDescription());
+			preparedStatement.setDate(5, JDBCUtils.getSQLDate(recipe.getPublicationDate()));
+			preparedStatement.setInt(6, recipe.getLikes());
+			System.out.println(preparedStatement);
+			preparedStatement.executeUpdate();
+		} catch (SQLException exception) {
+			JDBCUtils.printSQLException(exception);
+		}
 	}
 
-	/*
-	 * Would use query params here instead of only cuisines
-	 */
-	public List<Recipe> getAllRecipes(String cuisine, int page) {
-		List<Recipe> result = new ArrayList<Recipe>();
-		if (cuisine == null || cuisine.isEmpty()) {
-			Iterator<Entry<Long, Recipe>> it = recipes.entrySet().iterator();
-		    while (it.hasNext()) {
-		        Map.Entry<Long, Recipe> pair = (Map.Entry<Long, Recipe>)it.next();
-		        result.add(pair.getValue());
-		    }
+	@Override
+	public Recipe getRecipeById(int recipeId) {
+		Recipe recipe = null;
+		// Step 1: Establishing a Connection
+		try (Connection connection = JDBCUtils.getConnection();
+				// Step 2:Create a statement using connection object
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_RECIPE_BY_ID);) {
+			preparedStatement.setInt(1, recipeId);
+			System.out.println(preparedStatement);
+			// Step 3: Execute the query or update query
+			ResultSet rs = preparedStatement.executeQuery();
+
+			// Step 4: Process the ResultSet object.
+			while (rs.next()) {
+				int id = rs.getInt("id");
+				String title = rs.getString("title");
+				String owner = rs.getString("owner");
+				String filename = rs.getString("filename");
+				String description = rs.getString("description");
+				LocalDate publicationDate = rs.getDate("publication_date").toLocalDate();
+				int likes = rs.getInt("likes");
+
+				recipe = new Recipe(id, title, owner, filename, description, publicationDate, likes);
+			}
+		} catch (SQLException exception) {
+			JDBCUtils.printSQLException(exception);
 		}
-		else {
-			Iterator<Entry<Long, Recipe>> it = recipes.entrySet().iterator();
-		    while (it.hasNext()) {
-		        Map.Entry<Long, Recipe> pair = (Map.Entry<Long, Recipe>)it.next();
-		        if (pair.getValue().getRecipe_cuisine().equalsIgnoreCase(cuisine))
-		        	result.add(pair.getValue());
-		    }
-		}
-		List<List<Recipe>> paginated = paginate(result);
-		if (page <= 0 || page > paginated.size())
-			page = 1;
-		return paginated.get(page-1);
+		return recipe;
 	}
 	
-	public List<List<Recipe>> paginate(List<Recipe> results) {
-		if (results == null)
-			return Collections.emptyList();
-		List<Recipe> list = new ArrayList<Recipe>(results);
-		int pageSize = paginationLimit;
-		if (paginationLimit <= 0 || paginationLimit > list.size())
-			pageSize = list.size();
-		int numPages = (int) Math.ceil((double)list.size() / (double)pageSize);
-	    List<List<Recipe>> pages = new ArrayList<List<Recipe>>(numPages);
-	    for (int pageNum = 0; pageNum < numPages;)
-	        pages.add(list.subList(pageNum * pageSize, Math.min(++pageNum * pageSize, list.size())));
-	    return pages;
-	}
-
-	public Recipe getRecipe(long id) {
-		return recipes.get(id);
-	}
-
-	public boolean updateRecipe(long id, Recipe recipe) {
-		if (recipes.containsKey(id)) {
-			recipes.put(id, recipe);
-			return true;
-		}
-		return false;
-	}
-
-	public long addRecipe(Recipe recipe) {
-		recipe.setId(++lastUsedId);
-		recipes.put(recipe.getId(), recipe);
-		return lastUsedId;
-	}
-
-	public long addRating(long id, Rating rating) {
-		if (rating.getRating() >=1 && rating.getRating() <= 5) {
-			Recipe recipe = recipes.get(id);
-			recipe.getRatings().add(rating);
-			recipe.recalcAvgRating(rating.getRating());
-			//recipe.save(); to persist changes
-			// return new rating id;
-			return 1;
-		}
-		return 0;
-	}
-
-	public void deleteRecipe(Recipe recipe) {
-		// TODO Auto-generated method stub
+	@Override
+	public Recipe getMostPopularRecipe() {
+		List<Recipe> recipes = getAllRecipes();
 		
+		return recipes.stream().max(Comparator.comparing(Recipe::getLikes)).get();
+	}
+
+	@Override
+	public List<Recipe> getAllRecipes() {
+
+		// using try-with-resources to avoid closing resources (boiler plate code)
+		List<Recipe> recipes = new ArrayList<>();
+
+		// Step 1: Establishing a Connection
+		try (Connection connection = JDBCUtils.getConnection();
+
+				// Step 2:Create a statement using connection object
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_ALL_RECIPES);) {
+			System.out.println(preparedStatement);
+			// Step 3: Execute the query or update query
+			ResultSet rs = preparedStatement.executeQuery();
+
+			// Step 4: Process the ResultSet object.
+			while (rs.next()) {
+				int id = rs.getInt("id");
+				String title = rs.getString("title");
+				String owner = rs.getString("owner");
+				String filename = rs.getString("filename");
+				String description = rs.getString("description");
+				LocalDate publicationDate = rs.getDate("publication_date").toLocalDate();
+				int likes = rs.getInt("likes");
+				recipes.add(new Recipe(id, title, owner, filename, description, publicationDate, likes));
+			}
+		} catch (SQLException exception) {
+			JDBCUtils.printSQLException(exception);
+		}
+		return recipes;
+	}
+
+	@Override
+	public boolean deleteRecipe(int id) throws SQLException {
+		boolean rowDeleted;
+		try (Connection connection = JDBCUtils.getConnection();
+				PreparedStatement statement = connection.prepareStatement(DELETE_RECIPE_BY_ID);) {
+			statement.setInt(1, id);
+			rowDeleted = statement.executeUpdate() > 0;
+		}
+		return rowDeleted;
+	}
+
+	@Override
+	public boolean updateRecipe(Recipe recipe) throws SQLException {
+		boolean rowUpdated;
+		try (Connection connection = JDBCUtils.getConnection();
+				PreparedStatement statement = connection.prepareStatement(UPDATE_RECIPE);) {
+			statement.setString(1, recipe.getTitle());
+			statement.setString(2, recipe.getOwner());
+			statement.setString(3, recipe.getFilename());
+			statement.setString(4, recipe.getDescription());
+			statement.setInt(5, recipe.getLikes());
+			statement.setDate(6, JDBCUtils.getSQLDate(recipe.getPublicationDate()));
+			statement.setInt(7, recipe.getId());
+			rowUpdated = statement.executeUpdate() > 0;
+		}
+		return rowUpdated;
 	}
 	
-	public long getLastUsedId() {
-		return this.lastUsedId;
+	public void incrementRecipeLikes(final int recipeId) throws SQLException {
+		final Recipe recipeToUpdate = getRecipeById(recipeId);
+		try (Connection connection = JDBCUtils.getConnection();
+			PreparedStatement statement = connection.prepareStatement(UPDATE_RECIPE);) {
+			statement.setString(1, recipeToUpdate.getTitle());
+			statement.setString(2, recipeToUpdate.getOwner());
+			statement.setString(3, recipeToUpdate.getFilename());
+			statement.setString(4, recipeToUpdate.getDescription());
+			statement.setDate(5, JDBCUtils.getSQLDate(recipeToUpdate.getPublicationDate()));
+			statement.setInt(6, recipeToUpdate.getLikes()+1);
+			statement.setInt(7, recipeToUpdate.getId());
+			statement.executeUpdate();
+		}
 	}
 }
