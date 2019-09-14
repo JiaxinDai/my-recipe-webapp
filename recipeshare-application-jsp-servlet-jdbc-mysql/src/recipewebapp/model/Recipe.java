@@ -15,22 +15,25 @@ public class Recipe {
 	private String filename;
 	private String description;
 	private LocalDate publicationDate;
+	private int likes;
 	
-	public Recipe(int id, String title, String owner, String filename, String description, LocalDate publicationDate) {
+	public Recipe(final int id, final String title, final String owner, final String filename, final String description, final LocalDate publicationDate, final int likes) {
 		this.id = id;
 		this.title = title;
 		this.owner = owner;
 		this.filename = filename;
 		this.description = description;
 		this.publicationDate = publicationDate;
+		this.likes = likes;
 	}
 
-	public Recipe(String title, String owner, String filename, String description, LocalDate publicationDate) {
+	public Recipe(final String title, final String owner, final String filename, final String description, final LocalDate publicationDate) {
 		this.title = title;
 		this.owner = owner;
 		this.filename = filename;
 		this.description = description;
 		this.publicationDate = publicationDate;
+		this.likes = 0;
 	}
 	
 	public int getId() {
@@ -45,7 +48,7 @@ public class Recipe {
 		return title;
 	}
 	
-	public void setTitle(String title) {
+	public void setTitle(final String title) {
 		this.title = title;
 	}
 	
@@ -53,7 +56,7 @@ public class Recipe {
 		return owner;
 	}
 	
-	public void setOwner(String owner) {
+	public void setOwner(final String owner) {
 		this.owner = owner;
 	}
 	
@@ -61,7 +64,7 @@ public class Recipe {
 		return filename;
 	}
 
-	public void setFilename(String filename) {
+	public void setFilename(final String filename) {
 		this.filename = filename;
 	}
 
@@ -69,7 +72,7 @@ public class Recipe {
 		return description;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(final String description) {
 		this.description = description;
 	}
 
@@ -77,8 +80,16 @@ public class Recipe {
 		return publicationDate;
 	}
 
-	public void setPublicationDate(LocalDate publicationDate) {
+	public void setPublicationDate(final LocalDate publicationDate) {
 		this.publicationDate = publicationDate;
+	}
+	
+	public int getLikes() {
+		return likes;
+	}
+	
+	public void setLikes(final int likes) {
+		this.likes = likes;
 	}
 	
 	@Override

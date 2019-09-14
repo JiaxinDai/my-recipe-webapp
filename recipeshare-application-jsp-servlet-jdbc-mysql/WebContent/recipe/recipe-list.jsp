@@ -37,13 +37,17 @@
 					class="btn btn-success">Upload A Recipe</a>
 			</div>
 			<br>
-			
+
 			<div class="row">
 				<c:forEach var="recipe" items="${listRecipe}">
 					<div class="img-with-text">
 						<img class="recipe-img"
 							src="display?imgToDisplay=<c:out value='${recipe.filename}'/>&currentUser=<c:out value='${currentUser}'/>"
-							alt="Image Not Found" /> <a class="recipe-name-text"
+							alt="Image Not Found" />
+						<a class="heart-symbol"
+						href="like?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">
+						&hearts;<span style="font-size: 1.5vw;">${recipe.likes}</span></a>
+						<a class="recipe-name-text"
 							href="edit?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">${recipe.title}
 							>></a>
 						<p class="prep-text">
@@ -61,12 +65,22 @@
 
 <style>
 .img-with-text {
+	position: relative;
 	background-color: #ffded5;
 	text-align: justify;
 	width: 25vw;
 	height: 32vw;
 	margin: 1vw;
 	border: 2px solid #aaa;
+	background-color: #ffded5;
+}
+
+a.heart-symbol {
+	position: absolute;
+	top: 0vw;
+	color: red;
+	font-size: 3.5vw;
+	text-decoration: none;
 }
 
 img.recipe-img {

@@ -10,6 +10,8 @@ public interface RecipeDao {
 	void insertRecipe(Recipe recipe) throws SQLException;
 
 	Recipe getRecipeById(int recipeId);
+	
+	Recipe getMostPopularRecipe();
 
 	List<Recipe> getAllRecipes();
 
@@ -17,4 +19,5 @@ public interface RecipeDao {
 
 	boolean updateRecipe(Recipe recipe) throws SQLException;
 
+	void incrementRecipeLikes(final int recipeId) throws SQLException;
 }

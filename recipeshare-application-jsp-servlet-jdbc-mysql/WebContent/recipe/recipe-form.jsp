@@ -65,6 +65,11 @@
 						value="<c:out value='${recipe.filename}' />" />
 				</c:if>
 
+				<c:if test="${recipe != null}">
+					<input type="hidden" name="likes"
+						value="<c:out value='${recipe.likes}' />" />
+				</c:if>
+
 				<fieldset class="form-group">
 					<label>Recipe Name</label> <input type="text"
 						value="<c:out value='${recipe.title}' />" class="form-control"

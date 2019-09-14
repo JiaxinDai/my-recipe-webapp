@@ -76,6 +76,9 @@ public class RecipeController extends HttpServlet {
 			case "/display":
 				displayRecipeImage(request, response);
 				break;
+			case "/like":
+				likeRecipe(request, response);
+				break;
 			default:
 				RequestDispatcher dispatcher = request.getRequestDispatcher("login/login.jsp");
 				dispatcher.forward(request, response);
@@ -171,6 +174,7 @@ public class RecipeController extends HttpServlet {
 		String filename = null;
 		String description = null;
 		String title = null;
+		int likes = -1;
 		// String filename = null;
 
 		response.setContentType("text/html");
@@ -202,11 +206,13 @@ public class RecipeController extends HttpServlet {
 						title = fileItem.getString();
 					} else if (description == null) {
 						description = fileItem.getString();
+					} else if (likes == -1) {
+						likes = Integer.parseInt(fileItem.getString());
 					}
 				}
 			}
 
-			Recipe updateRecipe = new Recipe(id, title, owner, filename, description, LocalDate.now());
+			Recipe updateRecipe = new Recipe(id, title, owner, filename, description, LocalDate.now(), likes);
 			recipeDAO.updateRecipe(updateRecipe);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -277,4 +283,15 @@ public class RecipeController extends HttpServlet {
 		Files.copy(image.toPath(), response.getOutputStream());
 	}
 
+	private void likeRecipe(HttpServletRequest request, HttpServletResponse response) throws SQLException, IOException, ServletException {
+		int id = Integer.parseInt(request.getParameter("id"));
+		
+		recipeDAO.incrementRecipeLikes(id);
+
+		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
+		request.setAttribute("listRecipe", listRecipe);
+		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
+		dispatcher.forward(request, response);
+	}
+	
 }

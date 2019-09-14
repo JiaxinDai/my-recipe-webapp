@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import recipewebapp.model.Recipe;
@@ -20,13 +21,14 @@ import recipewebapp.utils.JDBCUtils;
 public class RecipeDaoImpl implements RecipeDao {
 
 	private static final String INSERT_RECIPES_SQL = "INSERT INTO recipes"
-			+ "  (title, owner, filename, description,  publication_date) VALUES " + " (?, ?, ?, ?, ?);";
+			+ "  (title, owner, filename, description,  publication_date, likes) VALUES " + " (?, ?, ?, ?, ?, ?);";
 
-	private static final String SELECT_RECIPE_BY_ID = "select id,title,owner,filename,description,publication_date from recipes where id =?";
+	private static final String SELECT_RECIPE_BY_ID = "select id,title,owner,filename,description,publication_date,likes from recipes where id =?";
 	private static final String SELECT_ALL_RECIPES = "select * from recipes";
 	private static final String DELETE_RECIPE_BY_ID = "delete from recipes where id = ?;";
-	private static final String UPDATE_RECIPE = "update recipes set title = ?, owner= ?, filename =?, description =?, publication_date = ? where id = ?;";
-
+	private static final String UPDATE_RECIPE = "update recipes set title = ?, owner= ?, filename =?, description =?, publication_date = ?, likes = ? where id = ?;";
+	private static final String SELECT_MOST_POPULAR_RECIPE = "SELECT id,MAX(likes) FROM recipes GROUP BY id;";
+	
 	public RecipeDaoImpl() {}
 	
 	@Override
@@ -39,6 +41,7 @@ public class RecipeDaoImpl implements RecipeDao {
 			preparedStatement.setString(3, recipe.getFilename());
 			preparedStatement.setString(4, recipe.getDescription());
 			preparedStatement.setDate(5, JDBCUtils.getSQLDate(recipe.getPublicationDate()));
+			preparedStatement.setInt(6, recipe.getLikes());
 			System.out.println(preparedStatement);
 			preparedStatement.executeUpdate();
 		} catch (SQLException exception) {
@@ -66,13 +69,21 @@ public class RecipeDaoImpl implements RecipeDao {
 				String filename = rs.getString("filename");
 				String description = rs.getString("description");
 				LocalDate publicationDate = rs.getDate("publication_date").toLocalDate();
+				int likes = rs.getInt("likes");
 
-				recipe = new Recipe(id, title, owner, filename, description, publicationDate);
+				recipe = new Recipe(id, title, owner, filename, description, publicationDate, likes);
 			}
 		} catch (SQLException exception) {
 			JDBCUtils.printSQLException(exception);
 		}
 		return recipe;
+	}
+	
+	@Override
+	public Recipe getMostPopularRecipe() {
+		List<Recipe> recipes = getAllRecipes();
+		
+		return recipes.stream().max(Comparator.comparing(Recipe::getLikes)).get();
 	}
 
 	@Override
@@ -98,7 +109,8 @@ public class RecipeDaoImpl implements RecipeDao {
 				String filename = rs.getString("filename");
 				String description = rs.getString("description");
 				LocalDate publicationDate = rs.getDate("publication_date").toLocalDate();
-				recipes.add(new Recipe(id, title, owner, filename, description, publicationDate));
+				int likes = rs.getInt("likes");
+				recipes.add(new Recipe(id, title, owner, filename, description, publicationDate, likes));
 			}
 		} catch (SQLException exception) {
 			JDBCUtils.printSQLException(exception);
@@ -126,10 +138,27 @@ public class RecipeDaoImpl implements RecipeDao {
 			statement.setString(2, recipe.getOwner());
 			statement.setString(3, recipe.getFilename());
 			statement.setString(4, recipe.getDescription());
-			statement.setDate(5, JDBCUtils.getSQLDate(recipe.getPublicationDate()));
-			statement.setInt(6, recipe.getId());
+			statement.setInt(5, recipe.getLikes());
+			statement.setDate(6, JDBCUtils.getSQLDate(recipe.getPublicationDate()));
+			statement.setInt(7, recipe.getId());
 			rowUpdated = statement.executeUpdate() > 0;
 		}
 		return rowUpdated;
+	}
+	
+	public void incrementRecipeLikes(final int recipeId) throws SQLException {
+		final Recipe recipeToUpdate = getRecipeById(recipeId);
+		try (Connection connection = JDBCUtils.getConnection();
+			PreparedStatement statement = connection.prepareStatement(UPDATE_RECIPE);) {
+			statement.setString(1, recipeToUpdate.getTitle());
+			statement.setString(2, recipeToUpdate.getOwner());
+			statement.setString(3, recipeToUpdate.getFilename());
+			statement.setString(4, recipeToUpdate.getDescription());
+			statement.setDate(5, JDBCUtils.getSQLDate(recipeToUpdate.getPublicationDate()));
+			statement.setInt(6, recipeToUpdate.getLikes()+1);
+			statement.setInt(7, recipeToUpdate.getId());
+			statement.executeUpdate();
+		}
+		System.out.println(getMostPopularRecipe().getFilename() + " " + getMostPopularRecipe().getLikes());
 	}
 }
