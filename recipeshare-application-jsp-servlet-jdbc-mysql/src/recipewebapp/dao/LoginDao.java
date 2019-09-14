@@ -22,6 +22,10 @@ public class LoginDao {
 			preparedStatement.setString(1, loginBean.getUsername());
 			preparedStatement.setString(2, loginBean.getPassword());
 
+			System.out.println(preparedStatement);
+			ResultSet rs = preparedStatement.executeQuery();
+			status = rs.next();
+
 		} catch (SQLException e) {
 			// process sql exception
 			JDBCUtils.printSQLException(e);
