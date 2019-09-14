@@ -1,52 +1,21 @@
-package recipewebapp.controllers;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
-import java.io.IOException;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.RestController;
 
-import recipewebapp.dao.UserDao;
-import recipewebapp.model.User;
 
-@WebServlet("/register")
-public class UserController extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-	private UserDao userDao;
 
-	public void init() {
-		userDao = new UserDao();
-	}
+@RestController
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		register(request, response);
-	}
+public class UserController {
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		response.sendRedirect("register/register.jsp");
-	}
+    @RequestMapping("/user")
 
-	private void register(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public User user(@AuthenticationPrincipal User principal) {
 
-		User user = new User(request.getParameter("username"), request.getParameter("password"));
+        return principal;
 
-		try {
-			int result = userDao.registerUser(user);
-			if(result == 1) {
-				request.setAttribute("NOTIFICATION", "User Registered Successfully!");
-			}
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+    }
 
-		RequestDispatcher dispatcher = request.getRequestDispatcher("register/register.jsp");
-		dispatcher.forward(request, response);
-	}
 }

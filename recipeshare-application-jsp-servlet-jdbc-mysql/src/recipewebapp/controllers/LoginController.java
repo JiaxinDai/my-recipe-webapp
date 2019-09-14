@@ -1,66 +1,39 @@
 package recipewebapp.controllers;
 
-import java.io.IOException;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+@Controller
+public class LoginController {
 
-import recipewebapp.dao.LoginDao;
-import recipewebapp.dao.RecipeDao;
-import recipewebapp.dao.RecipeDaoImpl;
-import recipewebapp.model.LoginBean;
+    @Autowired
+    LoginService loginService;
 
-/**
- * @email Ramesh Fadatare
- */
+       /**
+     * Validate login credentials and redirect user to home page.
+     * If user is successfully validated, redirect to home page.
+     * Else redirect user with an Error Status
+     * @param user
+     * @param response
+     * @param redirectAttributes
+     * @return
+     */
+    @PostMapping("/login")
+    public String doubleSubmitLogin(@ModelAttribute User user, HttpServletResponse response, RedirectAttributes redirectAttributes){
 
-@WebServlet("/login")
-public class LoginController extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-	private LoginDao loginDao;
-	private RecipeDao recipeDAO;
 
-	public void init() {
-		loginDao = new LoginDao();
-		recipeDAO = new RecipeDaoImpl();
-	}
+        if(loginService.authenticateUser(user.getUsername(),user.getPassword()) ){
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		response.sendRedirect("login/login.jsp");
-	}
+            Cookie cookieSessionId = new Cookie("sessionId", loginService.saveSessionData(user.getUsername()));
+            Cookie cookieCSRF      = new Cookie("csrfCookie", loginService.generateRandomToken());
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-		authenticate(request, response);
-	}
-	
-	private void authenticate(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-		String username = request.getParameter("username");
-		String password = request.getParameter("password");
-		LoginBean loginBean = new LoginBean();
-		loginBean.setUsername(username);
-		loginBean.setPassword(password);
-		
-		try {
-			if (loginDao.validate(loginBean)) {
-				request.setAttribute("listRecipe", recipeDAO.getAllRecipes());
-				request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
-				request.setAttribute("currentUser", username);
-				RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
-				dispatcher.forward(request, response);
-			} else {
-				HttpSession session = request.getSession();
-				// session.setAttribute("user", username);
-				// response.sendRedirect("login.jsp");
-			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
+            response.addCookie(cookieSessionId);
+            response.addCookie(cookieCSRF);
 
-	}
+            return "redirect:/account";
+
+        }else{
+
+            redirectAttributes.addFlashAttribute("Status", "error");
+            return "redirect:/";
+
+        }
+    }
 }
