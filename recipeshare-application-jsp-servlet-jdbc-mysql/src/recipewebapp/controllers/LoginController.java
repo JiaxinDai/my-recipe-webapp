@@ -49,6 +49,7 @@ public class LoginController extends HttpServlet {
 		try {
 			if (loginDao.validate(loginBean)) {
 				request.setAttribute("listRecipe", recipeDAO.getAllRecipes());
+				request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 				request.setAttribute("currentUser", username);
 				RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 				dispatcher.forward(request, response);

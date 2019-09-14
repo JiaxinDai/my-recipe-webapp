@@ -44,9 +44,22 @@
 						<img class="recipe-img"
 							src="display?imgToDisplay=<c:out value='${recipe.filename}'/>&currentUser=<c:out value='${currentUser}'/>"
 							alt="Image Not Found" />
-						<a class="heart-symbol"
-						href="like?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">
-						&hearts;<span style="font-size: 1.5vw;">${recipe.likes}</span></a>
+
+						<c:if test="${popularRecipe.id != recipe.id}">
+							<a class="heart-symbol"
+								href="like?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">
+								&hearts;<span style="font-size: 1.5vw;">${recipe.likes}</span>
+							</a>
+						</c:if>
+
+						<c:if test="${popularRecipe.id == recipe.id}">
+							<a class="heart-symbol"
+								href="like?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">
+								&hearts; <span style="font-size: 1.5vw;">${recipe.likes}</span>
+								<span style="font-size: 2.0vw; font-weight: bold; font-style: italic;">RECOMMENDED</span>
+							</a>
+						</c:if>
+
 						<a class="recipe-name-text"
 							href="edit?id=<c:out value='${recipe.id}'/>&currentUser=<c:out value='${currentUser}'/>">${recipe.title}
 							>></a>

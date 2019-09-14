@@ -93,6 +93,7 @@ public class RecipeController extends HttpServlet {
 			throws SQLException, IOException, ServletException {
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 		dispatcher.forward(request, response);
 	}
@@ -162,6 +163,7 @@ public class RecipeController extends HttpServlet {
 		} finally {
 			List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 			request.setAttribute("listRecipe", listRecipe);
+			request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 			RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 			dispatcher.forward(request, response);
 			out.close();
@@ -219,6 +221,7 @@ public class RecipeController extends HttpServlet {
 		} finally {
 			List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 			request.setAttribute("listRecipe", listRecipe);
+			request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 			RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 			dispatcher.forward(request, response);
 			out.close();
@@ -235,6 +238,7 @@ public class RecipeController extends HttpServlet {
 
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 		dispatcher.forward(request, response);
 	}
@@ -290,6 +294,7 @@ public class RecipeController extends HttpServlet {
 
 		List<Recipe> listRecipe = recipeDAO.getAllRecipes();
 		request.setAttribute("listRecipe", listRecipe);
+		request.setAttribute("popularRecipe", recipeDAO.getMostPopularRecipe());
 		RequestDispatcher dispatcher = request.getRequestDispatcher("recipe/recipe-list.jsp");
 		dispatcher.forward(request, response);
 	}

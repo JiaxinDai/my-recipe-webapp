@@ -159,6 +159,5 @@ public class RecipeDaoImpl implements RecipeDao {
 			statement.setInt(7, recipeToUpdate.getId());
 			statement.executeUpdate();
 		}
-		System.out.println(getMostPopularRecipe().getFilename() + " " + getMostPopularRecipe().getLikes());
 	}
 }
