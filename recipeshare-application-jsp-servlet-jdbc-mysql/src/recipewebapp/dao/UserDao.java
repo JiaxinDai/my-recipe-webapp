@@ -1,34 +1,39 @@
 package recipewebapp.dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-import recipewebapp.model.User;
-import recipewebapp.utils.JDBCUtils;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDao {
+   @SuppressWarnings("unchecked")
+public List<User> getAllUsers(){
+      List<User> userList = null;
+      User user = new User(1, "Harini", "HMovieLabs");
+      userList = new ArrayList<User>();
+      userList.add(user);
+      saveUserList(userList);		
+      return userList;
+   }
 
-	public int registerUser(User user) throws ClassNotFoundException {
-		String INSERT_USERS_SQL = "INSERT INTO users"
-				+ "  (username, password) VALUES "
-				+ " (?, ?);";
+   private void saveUserList(List<User> userList){
+      try {
+         File file = new File("Users.dat");
+         FileOutputStream fos;
+         fos = new FileOutputStream(file);
 
-		int result = 0;
-		try (Connection connection = JDBCUtils.getConnection();
-				// Step 2:Create a statement using connection object
-				PreparedStatement preparedStatement = connection.prepareStatement(INSERT_USERS_SQL)) {
-			preparedStatement.setString(1, user.getUsername());
-			preparedStatement.setString(2, user.getPassword());
-			
-			// Step 3: Execute the query or update query
-			result = preparedStatement.executeUpdate();
-
-		} catch (SQLException e) {
-			// process sql exception
-			JDBCUtils.printSQLException(e);
-		}
-		return result;
-	}
-
+         ObjectOutputStream oos = new ObjectOutputStream(fos);
+         oos.writeObject(userList);
+         oos.close();
+      } catch (FileNotFoundException e) {
+         e.printStackTrace();
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+   }   
 }
